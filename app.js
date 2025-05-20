@@ -23,98 +23,210 @@ const stationCoords = {
   "Roorkee": [29.8543, 77.8880]
 };
 
-const trainData = [
+// Atomic legs between stations with train info
+const legs = [
   {
-    source: "Delhi",
-    destination: "Dehradun",
-    route: ["Delhi", "Meerut", "Saharanpur", "Roorkee", "Haridwar", "Dehradun"],
-    trains: [
-      { name: "Shatabdi Express", number: "12017", departure: "06:45 AM", arrival: "12:45 PM", duration: "6 hrs" },
-      { name: "Nanda Devi Express", number: "12205", departure: "11:50 PM", arrival: "05:40 AM", duration: "5 hrs 50 mins" }
-    ]
+    from: "Delhi",
+    to: "Meerut",
+    train: "12001",
+    departure: "06:00 AM",
+    arrival: "07:30 AM",
+    distance: "70 km",
   },
   {
-    source: "Mumbai",
-    destination: "Delhi",
-    route: ["Mumbai", "Pune", "Delhi"],
-    trains: [
-      { name: "Rajdhani Express", number: "12951", departure: "04:00 PM", arrival: "08:00 AM", duration: "16 hrs" }
-    ]
+    from: "Meerut",
+    to: "Dehradun",
+    train: "12002",
+    departure: "08:00 AM",
+    arrival: "11:00 AM",
+    distance: "140 km",
   },
   {
-    source: "Kolkata",
-    destination: "Delhi",
-    route: ["Kolkata", "Delhi"],
-    trains: [
-      { name: "Poorva Express", number: "12381", departure: "08:00 AM", arrival: "06:00 AM (next day)", duration: "22 hrs" }
-    ]
+    from: "Meerut",
+    to: "Saharanpur",
+    train: "12003",
+    departure: "08:15 AM",
+    arrival: "09:45 AM",
+    distance: "90 km",
   },
   {
-    source: "Kerala",
-    destination: "Mumbai",
-    route: ["Kerala", "Pune", "Mumbai"],
-    trains: [
-      { name: "Netravati Express", number: "16346", departure: "11:00 AM", arrival: "07:00 AM (next day)", duration: "20 hrs" }
-    ]
+    from: "Saharanpur",
+    to: "Roorkee",
+    train: "12004",
+    departure: "10:00 AM",
+    arrival: "10:45 AM",
+    distance: "40 km",
   },
   {
-    source: "Dehradun",
-    destination: "Delhi",
-    route: ["Dehradun", "Haridwar", "Roorkee", "Saharanpur", "Meerut", "Delhi"],
-    trains: [
-      { name: "Vande Bharat", number: "290102", departure: "07:00 AM", arrival: "12:00 PM", duration: "5 hrs" },
-      { name: "Shatabdi Express", number: "12017", departure: "05:00 AM", arrival: "11:00 PM", duration: "6 hrs"  }
-    ]
+    from: "Roorkee",
+    to: "Haridwar",
+    train: "12005",
+    departure: "11:00 AM",
+    arrival: "11:30 AM",
+    distance: "30 km",
   },
+  {
+    from: "Haridwar",
+    to: "Dehradun",
+    train: "12006",
+    departure: "12:00 PM",
+    arrival: "01:00 PM",
+    distance: "55 km",
+  },
+  {
+    from: "Delhi",
+    to: "Pune",
+    train: "13001",
+    departure: "06:00 PM",
+    arrival: "07:00 AM",
+    distance: "1500 km",
+  },
+  {
+    from: "Pune",
+    to: "Mumbai",
+    train: "13002",
+    departure: "08:00 AM",
+    arrival: "11:00 AM",
+    distance: "150 km",
+  },
+  {
+    from: "Mumbai",
+    to: "Delhi",
+    train: "13003",
+    departure: "01:00 PM",
+    arrival: "05:00 AM",
+    distance: "1400 km",
+  },
+  {
+    from: "Kolkata",
+    to: "Delhi",
+    train: "14001",
+    departure: "08:00 AM",
+    arrival: "06:00 AM (next day)",
+    distance: "1500 km",
+  },
+  {
+    from: "Dehradun",
+    to: "Saharanpur",
+    train: "15001",
+    departure: "11:00 AM",
+    arrival: "02:00 PM",
+    distance: "150 km",
+  },
+  {
+    from: "Saharanpur",
+    to: "Delhi",
+    train: "15003",
+    departure: "02:30 PM",
+    arrival: "5:30 PM",
+    distance: "120 km",
+  },
+  {
+    from: "Meerut",
+    to: "Kolkata",
+    train: "15007",
+    departure: "09:00 AM",
+    arrival: "10:00 AM (next day)",
+    distance: "1400 km",
+  },
+  {
+    from: "Mumbai",
+    to: "Kerala",
+    train: "17005",
+    departure: "12:00 PM",
+    arrival: "10:00 AM (next day)",
+    distance: "1600 km",
+  }
 ];
 
-function findRoute() {
-  // Remove old markers/routes
+function findMultiLegRoute(source, destination) {
+  let results = [];
+  let visited = new Set();
+
+  function dfs(current, path) {
+    if (current === destination) {
+      results.push([...path]);
+      return;
+    }
+    visited.add(current);
+
+    for (let leg of legs) {
+      if (leg.from === current && !visited.has(leg.to)) {
+        path.push(leg);
+        dfs(leg.to, path);
+        path.pop();
+      }
+    }
+    visited.delete(current);
+  }
+
+  dfs(source, []);
+  return results.length > 0 ? results[0] : null; // first found route
+}
+
+function clearMapAndTable() {
   markers.forEach(m => map.removeLayer(m));
   routes.forEach(r => map.removeLayer(r));
   markers = [];
   routes = [];
+  document.getElementById("trainData").innerHTML = "";
+}
 
-  let src = document.getElementById('source').value;
-  let dest = document.getElementById('destination').value;
+function showRoute(routeLegs) {
+  clearMapAndTable();
+
+  let latlngs = [];
+
+  routeLegs.forEach((leg) => {
+    let fromCoord = stationCoords[leg.from];
+    let toCoord = stationCoords[leg.to];
+
+    if (fromCoord) {
+      let markerFrom = L.marker(fromCoord).addTo(map).bindPopup(`<b>${leg.from}</b>`);
+      markers.push(markerFrom);
+      latlngs.push(fromCoord);
+    }
+    if (toCoord) {
+      let markerTo = L.marker(toCoord).addTo(map).bindPopup(`<b>${leg.to}</b>`);
+      markers.push(markerTo);
+      latlngs.push(toCoord);
+    }
+
+    // Table row per leg
+    let row = `<tr>
+      <td>${leg.from}</td>
+      <td>${leg.to}</td>
+      <td>${leg.train}</td>
+      <td>${leg.departure}</td>
+      <td>${leg.arrival}</td>
+      <td>${leg.distance}</td>
+    </tr>`;
+    document.getElementById("trainData").innerHTML += row;
+
+    // Draw polyline for this leg
+    let polyline = L.polyline([fromCoord, toCoord], { color: 'blue', weight: 4 }).addTo(map);
+    routes.push(polyline);
+  });
+
+  map.fitBounds(L.latLngBounds(latlngs));
+}
+
+function findRoute() {
+  let src = document.getElementById("source").value;
+  let dest = document.getElementById("destination").value;
 
   if (!src || !dest || src === dest) {
     alert("Please select valid and different source & destination!");
     return;
   }
 
-  let result = trainData.find(t => t.source === src && t.destination === dest);
+  let route = findMultiLegRoute(src, dest);
 
-  let tableBody = document.getElementById('trainData');
-  tableBody.innerHTML = "";
-
-  if (result) {
-    // Show train details
-    result.trains.forEach(train => {
-      let row = `<tr>
-        <td>${train.name}</td>
-        <td>${train.number}</td>
-        <td>${train.departure}</td>
-        <td>${train.arrival}</td>
-        <td>${train.duration}</td>
-      </tr>`;
-      tableBody.innerHTML += row;
-    });
-
-    // Plot route on map
-    let latlngs = result.route.map(station => {
-      let coord = stationCoords[station];
-      let marker = L.marker(coord).addTo(map).bindPopup(`<b>${station}</b>`);
-      markers.push(marker);
-      return coord;
-    });
-
-    let polyline = L.polyline(latlngs, { color: 'blue', weight: 4 }).addTo(map);
-    routes.push(polyline);
-
-    map.fitBounds(polyline.getBounds());
-
+  if (route) {
+    alert("Route found!");
+    showRoute(route);
   } else {
-    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: red;">No train available for this route.</td></tr>`;
+    alert("No route found connecting these stations.");
+    clearMapAndTable();
   }
 }
