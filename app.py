@@ -11,6 +11,11 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 csv_path = os.path.join(basedir, 'data', 'trains.csv')
 df = pd.read_csv(csv_path, encoding='utf-8')
 
+# Load and merge coordinates
+coord_path = os.path.join(basedir, 'data', 'station_coordinates.csv')
+coords_df = pd.read_csv(coord_path)
+df = df.merge(coords_df, on=['Station Code', 'Station Name'], how='left')
+
 
 # Fix NumPy types for JSON
 def make_jsonable(obj):
@@ -50,8 +55,16 @@ def get_route():
 
     detailed_route = get_train_segments(df, path)
 
-    # Dummy coordinates
-    coordinates = [{'lat': 28.6139 + i * 0.1, 'lng': 77.2090 + i * 0.1} for i in range(len(path))]
+    # Use real coordinates
+    coordinates = []
+    for station in path:
+        row = df[df['Station Name'] == station].dropna(subset=['Latitude', 'Longitude'])
+        if not row.empty:
+            lat = float(row.iloc[0]['Latitude'])
+            lng = float(row.iloc[0]['Longitude'])
+            coordinates.append({'lat': lat, 'lng': lng})
+        else:
+            coordinates.append({'lat': 0.0, 'lng': 0.0})  # fallback
 
     # Ensure all values are JSON serializable
     details_jsonable = []
