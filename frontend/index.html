@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Train Route Planner</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
+    <style>
+        #map { height: 400px; margin-top: 20px; }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container text-center mt-4">
+    <h3><strong>Train Route Planner</strong></h3>
+    <div class="d-flex justify-content-center my-3">
+        <select id="source" class="form-select mx-2" style="width: 200px;"></select>
+        <select id="destination" class="form-select mx-2" style="width: 200px;"></select>
+        <button id="findRoute" class="btn btn-primary">Find Route</button>
+    </div>
+
+    <div id="map"></div>
+    <div id="output" class="text-start mt-4"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.css" />
+<script src="app.js"></script>
+</body>
+</html>
